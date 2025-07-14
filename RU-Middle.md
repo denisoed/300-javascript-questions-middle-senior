@@ -313,6 +313,23 @@ console.log('4'); // Синхронный код
 3. Выполнить одну макрозадачу
 4. Повторить с пункта 2
 
+## Проверочные вопросы - Общие
+
+1. **Какой тип тестов должен составлять основание пирамиды тестирования и почему?**
+   - Unit-тесты, потому что они быстрые, дешевые и легко поддерживаемые
+
+2. **Назовите три ключевых характеристики хорошего unit-теста.**
+   - Изолированность, быстрота выполнения, детерминированность
+
+3. **Что произойдет если выполнить: `Promise.resolve().then(() => console.log('A')); setTimeout(() => console.log('B'), 0);`?**
+   - Выведется сначала 'A', затем 'B' (микрозадача имеет приоритет)
+
+4. **Какие HTTP заголовки нужны для полного запрета кэширования?**
+   - `Cache-Control: no-cache, no-store, must-revalidate`, `Pragma: no-cache`, `Expires: 0`
+
+5. **В чем основное отличие паттернов Observer и Pub/Sub?**
+   - Observer: прямая связь между наблюдателем и субъектом; Pub/Sub: связь через посредника
+
 ## JS Core
 
 10. Какие типы данных бывают в JavaScript? Каким будет результат выполнения кода?
@@ -821,91 +838,7 @@ console.log(Number.isInteger(42));     // true
 console.log(String.fromCharCode(65));  // "A"
 ```
 
-18. Расскажите о базовом устройстве и механизме работы Event loop.
-
-**Ответ:**
-Event Loop — это механизм, который управляет выполнением кода, обработкой событий и выполнением подзадач.
-
-```javascript
-// Компоненты Event Loop:
-// 1. Call Stack (стек вызовов)
-// 2. Heap (куча для объектов)
-// 3. Callback Queue (очередь колбэков)
-// 4. Microtask Queue (очередь микрозадач)
-// 5. Web APIs (браузерные API)
-
-// Пример работы
-console.log('1');                    // Call Stack
-
-setTimeout(() => {                   // Web API -> Callback Queue
-  console.log('2');
-}, 0);
-
-Promise.resolve().then(() => {       // Microtask Queue
-  console.log('3');
-});
-
-console.log('4');                    // Call Stack
-
-// Результат: 1, 4, 3, 2
-
-// Детальный пример
-console.log('start');
-
-setTimeout(() => console.log('timeout1'), 0);
-setTimeout(() => console.log('timeout2'), 0);
-
-Promise.resolve().then(() => {
-  console.log('promise1');
-  return Promise.resolve();
-}).then(() => {
-  console.log('promise2');
-});
-
-Promise.resolve().then(() => {
-  console.log('promise3');
-});
-
-console.log('end');
-
-// Результат:
-// start
-// end
-// promise1
-// promise3
-// promise2
-// timeout1
-// timeout2
-
-// Алгоритм Event Loop:
-// 1. Выполнить весь синхронный код из Call Stack
-// 2. Выполнить ВСЕ микрозадачи (Promise, queueMicrotask)
-// 3. Выполнить ОДНУ макрозадачу (setTimeout, setInterval)
-// 4. Обновить рендеринг (если нужно)
-// 5. Повторить с шага 2
-
-// Демонстрация приоритетов
-setTimeout(() => console.log('timeout'), 0);
-
-Promise.resolve().then(() => {
-  console.log('promise');
-  setTimeout(() => console.log('timeout in promise'), 0);
-  return Promise.resolve();
-}).then(() => {
-  console.log('promise 2');
-});
-
-queueMicrotask(() => console.log('microtask'));
-
-// Результат:
-// promise
-// promise 2
-// microtask
-// timeout
-// timeout in promise
-```
-
-19. Что такое записи (records) и кортежи (tuples)? Чем они отличаются от обычных объектов?
+18. Что такое записи (records) и кортежи (tuples)? Чем они отличаются от обычных объектов?
 
 **Ответ:**
 Records и Tuples — это предложенные (proposal stage 2) неизменяемые структуры данных для JavaScript.
@@ -1274,80 +1207,7 @@ console.log(isPlainObject(null));         // false
 console.log(isPlainObject(new Date()));   // false
 ```
 
-23. Что такое приведение (преобразование) типов в JS?
-
-**Ответ:**
-Приведение типов — это процесс преобразования значения из одного типа в другой.
-
-```javascript
-// Типы приведения:
-// 1. Явное (explicit) - программист сам вызывает преобразование
-// 2. Неявное (implicit/coercion) - JavaScript делает это автоматически
-
-// ЯВНОЕ ПРИВЕДЕНИЕ
-// К строке
-String(123);        // "123"
-(123).toString();   // "123"
-123 + "";          // "123"
-
-// К числу
-Number("123");      // 123
-parseInt("123px");  // 123
-parseFloat("12.3"); // 12.3
-+"123";            // 123 (унарный плюс)
-
-// К boolean
-Boolean(1);         // true
-!!1;               // true
-!!"hello";         // true
-!!0;               // false
-
-// НЕЯВНОЕ ПРИВЕДЕНИЕ
-// При сравнении
-console.log(1 == "1");     // true (приведение к числу)
-console.log(1 === "1");    // false (строгое сравнение)
-console.log(null == undefined); // true (специальное правило)
-
-// При арифметических операциях
-console.log("5" - 2);      // 3 (строка к числу)
-console.log("5" + 2);      // "52" (число к строке)
-console.log(true + 1);     // 2 (boolean к числу)
-
-// Алгоритм ToNumber
-console.log(Number(""));       // 0
-console.log(Number(" "));      // 0
-console.log(Number("123"));    // 123
-console.log(Number("abc"));    // NaN
-console.log(Number(true));     // 1
-console.log(Number(false));    // 0
-console.log(Number(null));     // 0
-console.log(Number(undefined)); // NaN
-
-// Алгоритм ToString
-console.log(String(123));      // "123"
-console.log(String(true));     // "true"
-console.log(String(null));     // "null"
-console.log(String(undefined)); // "undefined"
-console.log(String({}));       // "[object Object]"
-console.log(String([]));       // ""
-console.log(String([1,2,3]));  // "1,2,3"
-
-// Алгоритм ToBoolean (falsy values)
-console.log(Boolean(0));           // false
-console.log(Boolean(-0));          // false
-console.log(Boolean(NaN));         // false
-console.log(Boolean(""));          // false
-console.log(Boolean(null));        // false
-console.log(Boolean(undefined));   // false
-
-// Всё остальное - truthy
-console.log(Boolean("0"));         // true
-console.log(Boolean([]));          // true
-console.log(Boolean({}));          // true
-console.log(Boolean(function(){})); // true
-```
-
-24. Что такое явное и неявное приведение (преобразование) типов данных в JS? Как происходит преобразование типов в следующих примерах:
+23. Что такое явное и неявное приведение (преобразование) типов данных в JS? Как происходит преобразование типов в следующих примерах:
 
 ```javascript
 {}+[]+{}+[1]
@@ -1429,141 +1289,7 @@ console.log("5" * "2");         // 10 (обе строки → числа)
 console.log("5" * "a");         // NaN
 ```
 
-25. Что такое Garbage Collector?
-
-**Ответ:**
-Garbage Collector (сборщик мусора) — это автоматический механизм управления памятью, который освобождает память от объектов, которые больше не используются.
-
-```javascript
-// Основные алгоритмы сборки мусора:
-
-// 1. Reference Counting (подсчёт ссылок) - устаревший
-// Проблема: циклические ссылки
-function cyclicReference() {
-  const obj1 = {};
-  const obj2 = {};
-  
-  obj1.ref = obj2;
-  obj2.ref = obj1;
-  
-  // В старых браузерах это приводило к утечке памяти
-  return null; // obj1 и obj2 недостижимы, но ссылаются друг на друга
-}
-
-// 2. Mark-and-Sweep (современный алгоритм)
-// Помечает достижимые объекты от корневых ссылок
-
-// Примеры создания и освобождения памяти
-function createObjects() {
-  const arr = new Array(1000000).fill(0); // Создаём большой массив
-  
-  return function() {
-    return arr.length; // Замыкание держит ссылку на arr
-  };
-}
-
-let closure = createObjects(); // arr в памяти
-closure = null;                // arr может быть удалён GC
-
-// Управление памятью на практике
-class DataProcessor {
-  constructor() {
-    this.cache = new Map();
-    this.timers = [];
-  }
-  
-  // Плохо: потенциальная утечка памяти
-  addTimer() {
-    const timer = setInterval(() => {
-      console.log('Timer running');
-    }, 1000);
-    this.timers.push(timer);
-  }
-  
-  // Хорошо: очистка ресурсов
-  cleanup() {
-    this.timers.forEach(timer => clearInterval(timer));
-    this.timers = [];
-    this.cache.clear();
-  }
-}
-
-// WeakMap и WeakSet - помогают избежать утечек
-const userMetadata = new WeakMap();
-
-function attachMetadata(user, data) {
-  userMetadata.set(user, data); // Если user удалён, metadata тоже удалится
-}
-
-// Примеры утечек памяти и их предотвращение
-
-// 1. DOM события
-// Плохо
-function badEventListener() {
-  const button = document.getElementById('myButton');
-  const data = new Array(1000000).fill(0); // Большие данные
-  
-  button.addEventListener('click', function() {
-    console.log(data.length); // data не может быть удалена
-  });
-}
-
-// Хорошо
-function goodEventListener() {
-  const button = document.getElementById('myButton');
-  
-  function clickHandler() {
-    console.log('Button clicked');
-  }
-  
-  button.addEventListener('click', clickHandler);
-  
-  // Очистка при необходимости
-  return () => {
-    button.removeEventListener('click', clickHandler);
-  };
-}
-
-// 2. Замыкания
-// Плохо
-function createFunctions() {
-  const bigData = new Array(1000000).fill(0);
-  const smallData = 'small';
-  
-  return [
-    function() { return smallData; }, // Держит ссылку на весь scope, включая bigData
-    function() { return 'hello'; }
-  ];
-}
-
-// Хорошо
-function createFunctionsBetter() {
-  const bigData = new Array(1000000).fill(0);
-  const smallData = 'small';
-  
-  // Используем промежуточную функцию
-  function createSmallDataFunction(data) {
-    return function() { return data; };
-  }
-  
-  return [
-    createSmallDataFunction(smallData), // Держит только smallData
-    function() { return 'hello'; }
-  ];
-}
-
-// Мониторинг памяти
-if (performance.memory) {
-  console.log('Used:', performance.memory.usedJSHeapSize);
-  console.log('Total:', performance.memory.totalJSHeapSize);
-  console.log('Limit:', performance.memory.jsHeapSizeLimit);
-}
-
-// Принудительная сборка мусора (только в DevTools)
-// gc(); // Работает только в Node.js с флагом --expose-gc или в DevTools
-```
-
-26. Опишите основные принципы работы «сборщика мусора» в JS-движках (engines).
+24. Опишите основные принципы работы «сборщика мусора» в JS-движках (engines).
 
 **Ответ:**
 Современные JS-движки используют generational garbage collection с несколькими оптимизациями:
@@ -2042,7 +1768,7 @@ loop.next(); // Выводит: 1, возвращает { value: undefined, done
 // yield возвращает результат console.log(i), который равен undefined
 ```
 
-39. **Symbol и системы счисления**
+37. **Symbol и системы счисления**
 ```javascript
 // Symbol - уникальный примитивный тип
 const sym1 = Symbol('description');
@@ -2073,9 +1799,29 @@ console.log(parseInt('11111111', 2)); // 255
 console.log(parseInt('377', 8));   // 255
 ```
 
+## Проверочные вопросы - JS Core
+
+1. **Какой результат выполнения: `let a; console.log(a); let a = 5;`?**
+   - ReferenceError из-за Temporal Dead Zone
+
+2. **В чем разница между `'name' in obj` и `obj.hasOwnProperty('name')`?**
+   - `in` проверяет всю цепочку прототипов, `hasOwnProperty` только собственные свойства
+
+3. **Что выведет: `console.log(typeof null, null instanceof Object);`?**
+   - `"object" false` - typeof null это историческая ошибка
+
+4. **Какой алгоритм GC используется в современных браузерах?**
+   - Mark-and-Sweep с поколенческой оптимизацией
+
+5. **Чем WeakMap отличается от Map?**
+   - WeakMap: ключи только объекты, не итерируемый, слабые ссылки на ключи
+
+6. **Что произойдет: `console.log(1 + '2' + 3);`?**
+   - Выведет "123" - строка имеет приоритет при конкатенации
+
 ## Функции
 
-40. Объясните, что означает currying. Приведите пример использования на практике.
+38. Объясните, что означает currying. Приведите пример использования на практике.
 
 **Ответ:**
 Каррирование (currying) — это преобразование функции с несколькими аргументами в последовательность функций, каждая из которых принимает один аргумент.
@@ -2181,7 +1927,7 @@ getUser('123').then(response => response.json());
 createUser({ name: 'John', age: 25 });
 ```
 
-41. Приведите пример функции с мемоизацией. Когда следует применять эту технику?
+39. Приведите пример функции с мемоизацией. Когда следует применять эту технику?
 
 **Ответ:**
 Мемоизация — это техника кэширования результатов выполнения функции для избежания повторных вычислений.
@@ -2368,7 +2114,7 @@ console.log(mathUtils.isPrime(97)); // Вычисляется
 console.log(mathUtils.isPrime(97)); // Из кэша
 ```
 
-42. Что такое чейнинг функций? Напишите пример с использованием этого подхода.
+40. Что такое чейнинг функций? Напишите пример с использованием этого подхода.
 
 **Ответ:**
 Чейнинг (цепочка вызовов) — это паттерн, позволяющий вызывать несколько методов объекта подряд, когда каждый метод возвращает сам объект.
@@ -2703,7 +2449,7 @@ class DOMChain {
 //   .show();
 ```
 
-43. В чем разница между function и arrow function? Каким будет результат выполнения кода?
+41. В чем разница между function и arrow function? Каким будет результат выполнения кода?
 
 ```javascript
 const pluckDeep = key => obj => key.split('.').reduce((accum, key) => accum[key], obj)
@@ -2903,9 +2649,26 @@ const multiplyBy3 = curriedMultiply(3);
 
 // ... existing code ...
 
+## Проверочные вопросы - Функции
+
+1. **Что такое каррирование и чем оно полезно?**
+   - Преобразование функции с множественными аргументами в цепочку функций с одним аргументом; полезно для частичного применения
+
+2. **Когда следует использовать мемоизацию?**
+   - Для чистых функций с дорогими вычислениями и повторяющимися аргументами
+
+3. **Что такое чейнинг функций?**
+   - Паттерн вызова методов подряд, когда каждый метод возвращает объект (обычно `this`)
+
+4. **Главное отличие стрелочных функций от обычных?**
+   - Стрелочные функции не имеют собственного `this`, используют лексический `this`
+
+5. **Можно ли использовать стрелочную функцию как конструктор?**
+   - Нет, стрелочные функции нельзя вызывать с `new`
+
 ## Фронтенд
 
-44. В чем принципиальная разница между событиями mouseleave и mouseout?
+42. В чем принципиальная разница между событиями mouseleave и mouseout?
 
 **Ответ:**
 Основная разница в том, как эти события обрабатывают всплытие (bubbling) и дочерние элементы:
@@ -2959,7 +2722,7 @@ element.addEventListener('mouseover', () => {
 });
 ```
 
-45. В каком порядке обрабатываются пользовательские события в DOM (click, mouseover и т.д.)? FIFO или LIFO?
+43. В каком порядке обрабатываются пользовательские события в DOM (click, mouseover и т.д.)? FIFO или LIFO?
 
 **Ответ:**
 События обрабатываются в порядке **FIFO** (First In, First Out) - первый добавленный обработчик выполняется первым.
@@ -3012,7 +2775,7 @@ button.addEventListener('click', () => {
 // Async 2
 ```
 
-46. Что такое Event bubbling и Event capturing?
+44. Что такое Event bubbling и Event capturing?
 
 **Ответ:**
 Event bubbling и capturing — это два способа распространения событий в DOM дереве.
@@ -3110,7 +2873,7 @@ class DropdownMenu {
 }
 ```
 
-47. Сравните методы объекта event stopPropagation и stopImmediateProparation.
+45. Сравните методы объекта event stopPropagation и stopImmediateProparation.
 
 **Ответ:**
 
@@ -3237,7 +3000,7 @@ button.addEventListener('click', () => {
 
 48-56. (остальные вопросы Фронтенд)
 
-48. **Оптимизация производительности веб-страницы**
+46. **Оптимизация производительности веб-страницы**
 ```javascript
 // 1. Ленивая загрузка изображений
 const images = document.querySelectorAll('img[data-src]');
@@ -3298,7 +3061,7 @@ class VirtualList {
 }
 ```
 
-49. **Same-origin policy**
+47. **Same-origin policy**
 ```javascript
 // Same-origin policy ограничивает доступ к ресурсам с других доменов
 
@@ -3331,7 +3094,7 @@ window.addEventListener('message', (event) => {
 });
 ```
 
-50. **Способы хранения данных в браузере**
+48. **Способы хранения данных в браузере**
 ```javascript
 // 1. localStorage - постоянное хранение
 localStorage.setItem('user', JSON.stringify({ name: 'John', id: 123 }));
@@ -3365,13 +3128,162 @@ caches.open('v1').then(cache => {
 // Cache API: неограниченное, для Service Workers
 ```
 
-51-56. (остальные Frontend вопросы продолжаются с подробными ответами и примерами...)
+49. **Виртуальный DOM. Зачем нужен?**
+```javascript
+// Виртуальный DOM - это JavaScript представление реального DOM
+// Позволяет оптимизировать обновления через diffing алгоритм
+
+// Пример концепции
+const virtualElement = {
+  tag: 'div',
+  props: { className: 'container' },
+  children: [
+    { tag: 'h1', props: {}, children: ['Hello World'] }
+  ]
+};
+
+// Преимущества:
+// - Батчинг обновлений
+// - Diffing и reconciliation
+// - Предсказуемость
+// - Кроссбраузерность
+```
+
+50. **Debounce vs Throttle**
+```javascript
+// Debounce - выполняет функцию только после паузы
+function debounce(func, delay) {
+  let timeoutId;
+  return function(...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(this, args), delay);
+  };
+}
+
+// Throttle - ограничивает частоту выполнения
+function throttle(func, limit) {
+  let inThrottle;
+  return function(...args) {
+    if (!inThrottle) {
+      func.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  };
+}
+
+// Использование
+const debouncedSearch = debounce(searchHandler, 300);
+const throttledScroll = throttle(scrollHandler, 100);
+```
+
+51. **Critical Rendering Path**
+```javascript
+// Этапы рендеринга страницы:
+// 1. HTML → DOM
+// 2. CSS → CSSOM  
+// 3. DOM + CSSOM → Render Tree
+// 4. Layout (Reflow)
+// 5. Paint
+// 6. Composite
+
+// Оптимизация:
+// - Минификация CSS/JS
+// - Critical CSS inline
+// - Async/defer для скриптов
+// - Resource hints (preload, prefetch)
+```
+
+52. **Web Workers**
+```javascript
+// main.js
+const worker = new Worker('worker.js');
+
+worker.postMessage({ data: largeArray });
+
+worker.onmessage = function(e) {
+  console.log('Result:', e.data);
+};
+
+// worker.js
+self.onmessage = function(e) {
+  const { data } = e.data;
+  
+  // Тяжелые вычисления
+  const result = data.map(item => expensiveOperation(item));
+  
+  self.postMessage(result);
+};
+```
+
+53. **Service Workers**
+```javascript
+// Регистрация
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js');
+}
+
+// sw.js
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open('v1').then(cache => {
+      return cache.addAll(['/index.html', '/styles.css']);
+    })
+  );
+});
+
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request).then(response => {
+      return response || fetch(event.request);
+    })
+  );
+});
+```
+
+54. **IndexedDB**
+```javascript
+// Открытие базы данных
+const request = indexedDB.open('MyDB', 1);
+
+request.onupgradeneeded = function(event) {
+  const db = event.target.result;
+  const objectStore = db.createObjectStore('users', { keyPath: 'id' });
+  objectStore.createIndex('email', 'email', { unique: true });
+};
+
+request.onsuccess = function(event) {
+  const db = event.target.result;
+  
+  // Добавление данных
+  const transaction = db.transaction(['users'], 'readwrite');
+  const objectStore = transaction.objectStore('users');
+  objectStore.add({ id: 1, name: 'John', email: 'john@example.com' });
+};
+```
+
+## Проверочные вопросы - Фронтенд
+
+1. **В чем разница между mouseleave и mouseout?**
+   - mouseleave не всплывает, mouseout всплывает и срабатывает на дочерних элементах
+
+2. **В каком порядке выполняются фазы событий?**
+   - Capturing → Target → Bubbling
+
+3. **Что делает stopImmediatePropagation в отличие от stopPropagation?**
+   - Останавливает также остальные обработчики на том же элементе
+
+4. **Назовите 3 способа оптимизации производительности веб-страницы.**
+   - Lazy loading, debouncing/throttling, виртуализация списков
+
+5. **В чем разница между debounce и throttle?**
+   - Debounce ждет паузы, throttle ограничивает частоту выполнения
 
 // ... existing code ...
 
 ## Верстка
 
-57. Объясните разницу между единицами измерения px, em, rem.
+55. Объясните разницу между единицами измерения px, em, rem.
 
 **Ответ:**
 
@@ -3425,7 +3337,7 @@ html {
 - **em**: локальное масштабирование относительно родителя
 - **rem**: глобальное масштабирование относительно корня
 
-58. Для чего нужны CSS-переменные? Приведите несколько примеров использования.
+56. Для чего нужны CSS-переменные? Приведите несколько примеров использования.
 
 **Ответ:**
 
@@ -3489,79 +3401,269 @@ const primaryColor = getComputedStyle(document.documentElement)
   .getPropertyValue('--primary-color');
 ```
 
-59-77. **Остальные вопросы верстки** (компактные ответы)
-
-59. **Box-sizing: border-box**
+57. **Box-sizing: border-box**
 ```css
-* { box-sizing: border-box; }
-/* Включает padding и border в общую ширину элемента */
+/* Стандартная модель: ширина = content */
+.standard-box {
+  width: 200px;
+  padding: 20px;
+  border: 5px solid black;
+  /* Итоговая ширина: 200 + 20*2 + 5*2 = 250px */
+}
+
+/* Border-box модель: ширина включает content + padding + border */
+.border-box {
+  box-sizing: border-box;
+  width: 200px;
+  padding: 20px;
+  border: 5px solid black;
+  /* Итоговая ширина: 200px (content автоматически 150px) */
+}
+
+/* Применение ко всем элементам */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
 ```
 
-60. **Печать**
+58. **Печать (CSS для print media)**
 ```css
 @media print {
-  .no-print { display: none; }
-  body { font-size: 12pt; color: black; }
+  /* Скрывать ненужные элементы */
+  .no-print, nav, .sidebar {
+    display: none !important;
+  }
+  
+  /* Настройки для печати */
+  body {
+    font-size: 12pt;
+    line-height: 1.4;
+    color: black !important;
+    background: white !important;
+  }
+  
+  /* Разрывы страниц */
+  .page-break {
+    page-break-before: always;
+  }
+  
+  /* Ссылки */
+  a[href]:after {
+    content: " (" attr(href) ")";
+  }
+  
+  /* Размер страницы */
+  @page {
+    margin: 2cm;
+    size: A4;
+  }
 }
 ```
 
-61. **Кастомизация форм**
+59. **Кастомизация форм**
 ```css
-input[type="text"] {
-  appearance: none; /* Убирает системные стили */
-  border: 1px solid #ccc;
+/* Убираем стандартные стили */
+input, select, textarea, button {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+/* Кастомный checkbox */
+.custom-checkbox {
+  position: relative;
+  display: inline-block;
+}
+
+.custom-checkbox input {
+  opacity: 0;
+  position: absolute;
+}
+
+.custom-checkbox .checkmark {
+  width: 20px;
+  height: 20px;
+  background: white;
+  border: 2px solid #ccc;
+  border-radius: 3px;
+}
+
+.custom-checkbox input:checked + .checkmark {
+  background: #007bff;
+  border-color: #007bff;
+}
+
+.custom-checkbox input:checked + .checkmark::after {
+  content: '✓';
+  color: white;
+  position: absolute;
+  left: 3px;
+  top: -2px;
 }
 ```
 
-62. **Progressive рендеринг**
-- Critical CSS inline
-- Lazy loading изображений
-- Code splitting
-- Resource hints (preload, prefetch)
-
-63. **Lazy loading**
+60. **Progressive рендеринг**
 ```html
-<img src="placeholder.jpg" data-src="real-image.jpg" loading="lazy">
+<!-- Critical CSS inline -->
+<style>
+  /* Критические стили для above-the-fold контента */
+  .header { /* стили */ }
+  .hero { /* стили */ }
+</style>
+
+<!-- Некритические стили асинхронно -->
+<link rel="preload" href="styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+
+<!-- Resource hints -->
+<link rel="dns-prefetch" href="//fonts.googleapis.com">
+<link rel="preconnect" href="//api.example.com">
+<link rel="prefetch" href="/next-page.html">
+
+<!-- Lazy loading изображений -->
+<img src="small-placeholder.jpg" 
+     data-src="large-image.jpg" 
+     loading="lazy" 
+     class="lazy-image">
 ```
 
-64. **Шаблонизаторы**
-- Handlebars, Mustache
-- Pug, EJS
-- JSX (React)
+61. **Lazy loading изображений**
+```javascript
+// Intersection Observer API
+const imageObserver = new IntersectionObserver((entries, observer) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const img = entry.target;
+      img.src = img.dataset.src;
+      img.classList.remove('lazy');
+      observer.unobserve(img);
+    }
+  });
+});
 
-65. **CSS методологии**
-- BEM: `.block__element--modifier`
-- SMACSS: Base, Layout, Module, State, Theme
-- OOCSS: Object Oriented CSS
+// Применяем к изображениям
+document.querySelectorAll('img[data-src]').forEach(img => {
+  imageObserver.observe(img);
+});
 
-66. **CSS Grid**
+// Прогрессивная загрузка с placeholder
+.lazy-image {
+  filter: blur(5px);
+  transition: filter 0.3s;
+}
+
+.lazy-image.loaded {
+  filter: blur(0);
+}
+```
+
+62. **CSS методологии**
 ```css
-.grid {
+/* BEM (Block Element Modifier) */
+.card { /* Block */ }
+.card__title { /* Element */ }
+.card__title--large { /* Modifier */ }
+
+/* SMACSS категории */
+/* Base */
+body, h1, p { margin: 0; }
+
+/* Layout */
+.l-header, .l-sidebar, .l-main { /* layouts */ }
+
+/* Modules */
+.button, .card, .nav { /* components */ }
+
+/* State */
+.is-hidden, .is-active, .is-disabled { /* states */ }
+
+/* Theme */
+.theme-dark .card { background: black; }
+
+/* OOCSS принципы */
+/* Отделение структуры от оформления */
+.btn { /* структура */ }
+.btn-primary { /* оформление */ }
+```
+
+63. **CSS Grid**
+```css
+/* Основы Grid */
+.grid-container {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, 1fr); /* 3 равные колонки */
+  grid-template-rows: 100px auto 50px;
+  gap: 20px;
+  
+  /* Именованные области */
+  grid-template-areas:
+    "header header header"
+    "sidebar main main"
+    "footer footer footer";
+}
+
+.header { grid-area: header; }
+.sidebar { grid-area: sidebar; }
+.main { grid-area: main; }
+.footer { grid-area: footer; }
+
+/* Адаптивная сетка */
+.responsive-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 1rem;
 }
-```
 
-67. **Анимированные форматы**
-- GIF, APNG, WebP, AVIF
-
-68. **CSS анимации в JS**
-```javascript
-element.addEventListener('animationend', () => {
-  console.log('Animation completed');
-});
-```
-
-69. **GPU ускорение**
-```css
-.gpu-accelerated {
-  transform: translateZ(0); /* Создает композитный слой */
-  will-change: transform;
+/* Выравнивание */
+.grid-align {
+  justify-items: center; /* по горизонтали */
+  align-items: center; /* по вертикали */
+  justify-content: space-between; /* контейнер по горизонтали */
+  align-content: center; /* контейнер по вертикали */
 }
 ```
 
-70-77. **SVG, иконочные шрифты, Shadow DOM, Custom Elements, Canvas** (детальные ответы доступны по запросу)
+64. **GPU ускорение и композитные слои**
+```css
+/* Принудительное создание композитного слоя */
+.gpu-layer {
+  transform: translateZ(0); /* hack для создания слоя */
+  will-change: transform; /* уведомляем браузер о планируемых изменениях */
+  backface-visibility: hidden; /* еще один способ */
+}
+
+/* Оптимизированные анимации (только transform и opacity) */
+.optimized-animation {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.optimized-animation:hover {
+  transform: scale(1.1) translateX(10px);
+  opacity: 0.8;
+}
+
+/* Избегать (вызывают layout/paint) */
+.bad-animation {
+  transition: width 0.3s ease; /* плохо - layout */
+  transition: background-color 0.3s ease; /* плохо - paint */
+}
+```
+
+## Проверочные вопросы - Верстка
+
+1. **В чем разница между px, em и rem?**
+   - px: абсолютная единица; em: относительно родителя; rem: относительно корневого элемента
+
+2. **Что включает в себя ширина элемента при box-sizing: border-box?**
+   - content + padding + border (margin не включается)
+
+3. **Какие CSS свойства лучше всего анимировать для производительности?**
+   - transform и opacity (не вызывают layout и paint)
+
+4. **Назовите три принципа CSS методологии BEM.**
+   - Block (блок), Element (элемент), Modifier (модификатор)
+
+5. **В чем преимущество CSS Grid перед Flexbox?**
+   - Grid работает в двух измерениях, позволяет создавать сложные макеты с именованными областями
 
 **70. Переиспользование SVG**
 ```html
@@ -3617,7 +3719,7 @@ const ctxWebGL = canvas.getContext('webgl'); // 3D графика
 
 ## Дополнительные вопросы для Middle уровня
 
-78. Что такое Tree Shaking и как оно работает?
+65. Что такое Tree Shaking и как оно работает?
 
 **Ответ:**
 Tree Shaking — это техника удаления неиспользуемого кода из финального бандла.
@@ -3656,7 +3758,7 @@ module.exports = {
 }
 ```
 
-79. Объясните разницу между imperative и declarative программирования. Приведите примеры.
+66. Объясните разницу между imperative и declarative программирования. Приведите примеры.
 
 **Ответ:**
 
@@ -3718,7 +3820,7 @@ const DeclarativeAnimation = () => {
 };
 ```
 
-80. Что такое Functional Programming? Назовите основные принципы.
+67. Что такое Functional Programming? Назовите основные принципы.
 
 **Ответ:**
 
@@ -3827,7 +3929,7 @@ const result = Maybe.of('  hello world  ')
 console.log(result.value); // HELLO-WORLD
 ```
 
-81. Что такое микрофронтенды? Какие есть подходы к их реализации?
+68. Что такое микрофронтенды? Какие есть подходы к их реализации?
 
 **Ответ:**
 
@@ -3971,7 +4073,7 @@ window.addEventListener('message', (event) => {
 });
 ```
 
-82. Расскажите о Performance API. Как измерить производительность веб-приложения?
+69. Расскажите о Performance API. Как измерить производительность веб-приложения?
 
 **Ответ:**
 
@@ -4139,7 +4241,7 @@ class RUMCollector {
 new RUMCollector();
 ```
 
-83. Что такое Server-Side Rendering (SSR) и Static Site Generation (SSG)? В чем разница?
+70. Что такое Server-Side Rendering (SSR) и Static Site Generation (SSG)? В чем разница?
 
 **Ответ:**
 
@@ -4281,7 +4383,7 @@ async function handler(request, response) {
 }
 ```
 
-84. Что такое Web Components? Приведите практический пример использования.
+71. Что такое Web Components? Приведите практический пример использования.
 
 **Ответ:**
 
@@ -4622,7 +4724,7 @@ table.data = [
 ];
 ```
 
-85. Объясните принципы SOLID применительно к JavaScript.
+72. Объясните принципы SOLID применительно к JavaScript.
 
 **Ответ:**
 
@@ -4950,4 +5052,22 @@ container.register('orderService', () => {
 const orderService = container.get('orderService');
 ```
 
-// ... existing code ...
+## Проверочные вопросы - Дополнительные темы
+
+1. **Что такое Tree Shaking и когда он работает?**
+   - Удаление неиспользуемого кода из бандла; работает с ES6 модулями и при включенной оптимизации
+
+2. **В чем разница между императивным и декларативным стилем?**
+   - Императивный описывает КАК делать; декларативный описывает ЧТО нужно получить
+
+3. **Назовите три принципа функционального программирования.**
+   - Чистые функции, неизменяемость данных, функции высшего порядка
+
+4. **Какие подходы к реализации микрофронтендов вы знаете?**
+   - Module Federation, Web Components, Single-SPA, Build-time integration
+
+5. **Назовите основные метрики Web Vitals.**
+   - LCP (Largest Contentful Paint), FID (First Input Delay), CLS (Cumulative Layout Shift)
+
+6. **В чем разница между SSR и SSG?**
+   - SSR генерирует HTML на каждый запрос; SSG генерирует HTML во время сборки
