@@ -6549,82 +6549,145 @@ console.log(partial(2, 3)); // 6 (передаем сразу два остав�
 
 🎯 **Простое объяснение:** Мемоизация — это "память" для функций. Функция запоминает свои результаты, чтобы не пересчитывать одно и то же заново.
 
+**🔍 Принцип работы:**
+
 ```javascript
-// Простая мемоизация
-function memoize(fn) {
-  const cache = new Map();
+// 🔍 Без мемоизации - каждый раз считаем заново
+function slowFibonacci(n) {
+  console.log(`Считаем fibonacci(${n})`);
+  if (n <= 1) return n;
+  return slowFibonacci(n - 1) + slowFibonacci(n - 2);
+}
+
+// Очень медленно!
+console.log(slowFibonacci(10)); // Множество вычислений одних и тех же чисел
+
+// 🔍 С мемоизацией - запоминаем результаты
+function memoize(func) {
+  const cache = new Map(); // Память функции
   
   return function(...args) {
-    const key = JSON.stringify(args);
+    const key = JSON.stringify(args); // Ключ для поиска
     
+    // Проверяем, есть ли результат в памяти
     if (cache.has(key)) {
-      console.log('Из кэша:', key);
+      console.log(`📦 Из кэша: ${key}`);
       return cache.get(key);
     }
     
-    console.log('Вычисляем:', key);
-    const result = fn.apply(this, args);
+    // Если нет - вычисляем и запоминаем
+    console.log(`🔄 Вычисляем: ${key}`);
+    const result = func.apply(this, args);
     cache.set(key, result);
     
     return result;
   };
 }
 
-// Пример 1: Числа Фибоначчи
-const fibonacci = memoize(function(n) {
+// Применяем мемоизацию
+const fastFibonacci = memoize(function(n) {
   if (n <= 1) return n;
-  return fibonacci(n - 1) + fibonacci(n - 2);
+  return fastFibonacci(n - 1) + fastFibonacci(n - 2);
 });
 
-console.log(fibonacci(40)); // Быстро благодаря мемоизации
+console.log(fastFibonacci(10)); // Быстро! Каждое число считается только один раз
+```
 
-// Пример 2: Факториал
-const factorial = memoize(function(n) {
-  if (n <= 1) return 1;
-  return n * factorial(n - 1);
+**🔍 Практические примеры:**
+
+```javascript
+// 🔍 1. Дорогие математические вычисления
+const expensiveMath = memoize(function(base, power) {
+  console.log(`Вычисляем ${base}^${power}`);
+  
+  // Симуляция дорогой операции
+  let result = 1;
+  for (let i = 0; i < power; i++) {
+    result *= base;
+    // Искусственная задержка
+    for (let j = 0; j < 1000000; j++) {}
+  }
+  
+  return result;
 });
 
-// Пример 3: Дорогие API запросы
+console.time('Первый вызов');
+console.log(expensiveMath(2, 10)); // 1024 - долго
+console.timeEnd('Первый вызов');
+
+console.time('Второй вызов');
+console.log(expensiveMath(2, 10)); // 1024 - мгновенно!
+console.timeEnd('Второй вызов');
+
+// 🔍 2. API запросы
 const memoizedFetch = memoize(async function(url) {
-  console.log('Делаем запрос к:', url);
+  console.log(`🌐 Запрос к: ${url}`);
   const response = await fetch(url);
   return response.json();
 });
 
-// Первый вызов сделает запрос, последующие вернут кэшированный результат
-memoizedFetch('/api/users/1');
-memoizedFetch('/api/users/1'); // Из кэша
+// Первый запрос пойдет на сервер
+const user1 = await memoizedFetch('/api/users/123');
 
-// Мемоизация с ограниченным размером кэша (LRU)
-function memoizeLRU(fn, maxSize = 100) {
+// Второй запрос вернется из кэша
+const user2 = await memoizedFetch('/api/users/123'); // Мгновенно!
+
+// 🔍 3. Проверка простых чисел
+const isPrime = memoize(function(n) {
+  console.log(`Проверяем ${n} на простоту`);
+  
+  if (n <= 1) return false;
+  if (n <= 3) return true;
+  if (n % 2 === 0 || n % 3 === 0) return false;
+  
+  for (let i = 5; i * i <= n; i += 6) {
+    if (n % i === 0 || n % (i + 2) === 0) {
+      return false;
+    }
+  }
+  return true;
+});
+
+console.log(isPrime(97));   // Вычисляем
+console.log(isPrime(97));   // Из кэша
+console.log(isPrime(101));  // Вычисляем
+console.log(isPrime(97));   // Из кэша
+```
+
+**🔍 Продвинутые техники мемоизации:**
+
+```javascript
+// 🔍 1. Мемоизация с ограничением размера кэша (LRU)
+function memoizeLRU(func, maxSize = 100) {
   const cache = new Map();
   
   return function(...args) {
     const key = JSON.stringify(args);
     
     if (cache.has(key)) {
-      // Перемещаем в конец (most recently used)
+      // Перемещаем в конец (недавно использованный)
       const value = cache.get(key);
       cache.delete(key);
       cache.set(key, value);
       return value;
     }
     
-    const result = fn.apply(this, args);
-    
-    // Если кэш переполнен, удаляем самый старый элемент
+    // Удаляем самый старый элемент если кэш переполнен
     if (cache.size >= maxSize) {
-      const firstKey = cache.keys().next().value;
-      cache.delete(firstKey);
+      const oldestKey = cache.keys().next().value;
+      cache.delete(oldestKey);
+      console.log(`🗑️ Удален старый кэш: ${oldestKey}`);
     }
     
+    const result = func.apply(this, args);
     cache.set(key, result);
+    
     return result;
   };
 }
 
-// Мемоизация с временным истечением
-function memoizeWithTTL(fn, ttl = 60000) { // TTL в миллисекундах
+// 🔍 2. Мемоизация с временным истечением (TTL)
+function memoizeWithTTL(func, ttlMs = 60000) {
   const cache = new Map();
   
   return function(...args) {
@@ -6633,14 +6696,18 @@ function memoizeWithTTL(fn, ttl = 60000) { // TTL в миллисекундах
     
     if (cache.has(key)) {
       const cached = cache.get(key);
-      if (now - cached.timestamp < ttl) {
+      
+      // Проверяем не истек ли срок
+      if (now - cached.timestamp < ttlMs) {
+        console.log(`⏰ Из кэша (${Math.round((now - cached.timestamp) / 1000)}с назад)`);
         return cached.value;
       } else {
-        cache.delete(key); // Удаляем устаревший
+        cache.delete(key);
+        console.log(`⏰ Кэш истек, удаляем: ${key}`);
       }
     }
     
-    const result = fn.apply(this, args);
+    const result = func.apply(this, args);
     cache.set(key, {
       value: result,
       timestamp: now
@@ -6650,94 +6717,111 @@ function memoizeWithTTL(fn, ttl = 60000) { // TTL в миллисекундах
   };
 }
 
-// Пример с объектными аргументами
-function expensiveCalculation(config) {
-  // Симуляция дорогой операции
-  let result = 0;
-  for (let i = 0; i < config.iterations; i++) {
-    result += Math.sqrt(i) * config.multiplier;
-  }
-  return result;
-}
-
-const memoizedCalculation = memoize(expensiveCalculation);
-
-const config = { iterations: 1000000, multiplier: 2 };
-console.time('First call');
-memoizedCalculation(config);
-console.timeEnd('First call');
-
-console.time('Second call');
-memoizedCalculation(config); // Из кэша
-console.timeEnd('Second call');
-
-// WeakMap для мемоизации с объектными ключами
-function memoizeWeakMap(fn) {
-  const cache = new WeakMap();
-  
-  return function(obj, ...args) {
-    if (typeof obj !== 'object') {
-      throw new Error('First argument must be an object');
-    }
-    
-    if (cache.has(obj)) {
-      return cache.get(obj);
-    }
-    
-    const result = fn.call(this, obj, ...args);
-    cache.set(obj, result);
-    
-    return result;
+// Пример: кэшируем данные на 5 секунд
+const getWeather = memoizeWithTTL(function(city) {
+  console.log(`🌤️ Запрашиваем погоду для ${city}`);
+  return {
+    city,
+    temperature: Math.round(Math.random() * 30),
+    timestamp: new Date().toLocaleTimeString()
   };
-}
+}, 5000);
 
-// Когда использовать мемоизацию:
+console.log(getWeather('Москва'));  // Запрос
+console.log(getWeather('Москва'));  // Из кэша
 
-// ✅ ХОРОШИЕ СЛУЧАИ:
-// 1. Чистые функции (без побочных эффектов)
-// 2. Дорогие вычисления
-// 3. Функции с повторяющимися аргументами
-// 4. Рекурсивные алгоритмы
-// 5. API запросы с одинаковыми параметрами
-
-// ❌ ПЛОХИЕ СЛУЧАИ:
-// 1. Функции с побочными эффектами
-// 2. Функции, которые всегда возвращают разные результаты
-// 3. Функции с большим количеством уникальных аргументов
-// 4. Память ограничена
-
-// Пример класса с мемоизацией
-class MathUtils {
-  constructor() {
-    this.primeCache = new Map();
-  }
-  
-  isPrime = memoize((n) => {
-    if (n <= 1) return false;
-    if (n <= 3) return true;
-    if (n % 2 === 0 || n % 3 === 0) return false;
-    
-    for (let i = 5; i * i <= n; i += 6) {
-      if (n % i === 0 || n % (i + 2) === 0) {
-        return false;
-      }
-    }
-    return true;
-  });
-}
-
-const mathUtils = new MathUtils();
-console.log(mathUtils.isPrime(97)); // Вычисляется
-console.log(mathUtils.isPrime(97)); // Из кэша
+// Через 6 секунд
+setTimeout(() => {
+  console.log(getWeather('Москва')); // Новый запрос (кэш истек)
+}, 6000);
 ```
 
-40. Что такое чейнинг функций? Напишите пример с использованием этого подхода.
+**🧠 Мнемоника для запоминания:**
 
-**Ответ:**
-Чейнинг (цепочка вызовов) — это паттерн, позволяющий вызывать несколько методов объекта подряд, когда каждый метод возвращает сам объект.
+- **Memoization** = "**Мемо**ри" (память функции)
+- **Cache** = "**Каша**" (склад с результатами)
+- **Hit** = "**Хит**" (попадание в кэш)
+- **Miss** = "**Мисс**" (промах - нужно вычислять)
+
+**⚡ Когда использовать мемоизацию:**
 
 ```javascript
-// Простой пример чейнинга
+// ✅ ХОРОШИЕ случаи:
+
+// 1. Чистые функции (один вход = один выход)
+const pureFunction = memoize((x, y) => x * y + Math.sqrt(x));
+
+// 2. Дорогие вычисления
+const expensiveCalc = memoize((data) => {
+  // Сложная обработка массива
+  return data.map(x => Math.pow(x, 10)).filter(x => x > 1000);
+});
+
+// 3. Рекурсивные алгоритмы
+const memoizedFactorial = memoize(n => 
+  n <= 1 ? 1 : n * memoizedFactorial(n - 1)
+);
+
+// 4. API запросы с параметрами
+const searchUsers = memoize(query => fetch(`/api/search?q=${query}`));
+
+// ❌ ПЛОХИЕ случаи:
+
+// 1. Функции с побочными эффектами
+const badExample1 = memoize(() => {
+  console.log('Side effect!'); // ❌ Побочный эффект
+  return Math.random(); // ❌ Всегда разные результаты
+});
+
+// 2. Функции с редко повторяющимися аргументами
+const badExample2 = memoize(timestamp => 
+  new Date(timestamp).toLocaleString() // ❌ Каждый timestamp уникален
+);
+
+// 3. Когда память критична
+const memoryHeavy = memoize(data => 
+  data.map(x => new Array(1000000).fill(x)) // ❌ Съедает много памяти
+);
+```
+
+**⚡ Мемоизация в классах:**
+
+```javascript
+// 🔍 Мемоизация методов класса
+class DataProcessor {
+  constructor() {
+    // Мемоизируем метод при создании экземпляра
+    this.processData = memoize(this.processData.bind(this));
+  }
+  
+  processData(dataset) {
+    console.log(`Обрабатываем ${dataset.length} элементов`);
+    
+    // Тяжелая обработка
+    return dataset
+      .filter(x => x > 0)
+      .map(x => Math.sqrt(x))
+      .sort((a, b) => b - a);
+  }
+}
+
+const processor = new DataProcessor();
+const data = [1, 4, 9, 16, 25];
+
+console.log(processor.processData(data)); // Вычисляем
+console.log(processor.processData(data)); // Из кэша
+```
+
+**Заключение:** Мемоизация — мощная техника оптимизации для чистых функций с дорогими вычислениями. Превращает медленные функции в быстрые, запоминая результаты. Главное — не злоупотреблять и следить за памятью!
+
+42. **Чейнинг функций - строим цепочки вызовов**
+
+🎯 **Простое объяснение:** Чейнинг — это когда методы объекта возвращают сам объект (`return this`), позволяя вызывать их подряд цепочкой. Как конвейер: результат одного метода сразу передается следующему.
+
+**🔍 Основной принцип:**
+
+```javascript
+// 🔍 Без чейнинга - много строк кода
 class Calculator {
   constructor(value = 0) {
     this.value = value;
@@ -6745,91 +6829,88 @@ class Calculator {
   
   add(num) {
     this.value += num;
-    return this; // Возвращаем this для чейнинга
-  }
-  
-  subtract(num) {
-    this.value -= num;
-    return this;
+    // ❌ Не возвращаем this - нет чейнинга
   }
   
   multiply(num) {
     this.value *= num;
-    return this;
+    // ❌ Не возвращаем this - нет чейнинга
   }
   
-  divide(num) {
-    if (num !== 0) {
-      this.value /= num;
-    }
-    return this;
-  }
-  
-  pow(num) {
-    this.value = Math.pow(this.value, num);
-    return this;
-  }
-  
-  // Метод для получения результата
   result() {
     return this.value;
   }
+}
+
+// Использование без чейнинга - неудобно
+const calc1 = new Calculator(10);
+calc1.add(5);
+calc1.multiply(2);
+const result1 = calc1.result(); // 30
+
+// 🔍 С чейнингом - красиво и компактно
+class ChainableCalculator {
+  constructor(value = 0) {
+    this.value = value;
+  }
   
-  // Метод для сброса
-  reset() {
-    this.value = 0;
-    return this;
+  add(num) {
+    this.value += num;
+    return this; // ✅ Возвращаем this для чейнинга
+  }
+  
+  multiply(num) {
+    this.value *= num;
+    return this; // ✅ Возвращаем this для чейнинга
+  }
+  
+  subtract(num) {
+    this.value -= num;
+    return this; // ✅ Возвращаем this для чейнинга
+  }
+  
+  result() {
+    return this.value; // Финальный результат
   }
 }
 
-// Использование
-const calc = new Calculator(10);
-const result = calc
+// Использование с чейнингом - одна строка!
+const result2 = new ChainableCalculator(10)
   .add(5)        // 15
-  .multiply(2)   // 30
-  .subtract(10)  // 20
-  .divide(4)     // 5
-  .pow(2)        // 25
+  .multiply(2)   // 30  
+  .subtract(5)   // 25
   .result();     // 25
 
-console.log(result); // 25
+console.log(result2); // 25
+```
 
-// Пример с строками
+**🔍 Практические примеры:**
+
+```javascript
+// 🔍 1. Построение строк
 class StringBuilder {
   constructor() {
     this.parts = [];
   }
   
-  append(str) {
-    this.parts.push(str);
+  append(text) {
+    this.parts.push(text);
     return this;
   }
   
-  prepend(str) {
-    this.parts.unshift(str);
+  prepend(text) {
+    this.parts.unshift(text);
     return this;
   }
   
-  insert(index, str) {
-    this.parts.splice(index, 0, str);
+  uppercase() {
+    this.parts = this.parts.map(part => part.toUpperCase());
     return this;
   }
   
-  remove(index) {
-    this.parts.splice(index, 1);
-    return this;
-  }
-  
-  replace(oldStr, newStr) {
-    const index = this.parts.indexOf(oldStr);
-    if (index !== -1) {
-      this.parts[index] = newStr;
-    }
-    return this;
-  }
-  
-  clear() {
-    this.parts = [];
+  wrap(before, after) {
+    this.parts.unshift(before);
+    this.parts.push(after);
     return this;
   }
   
@@ -6838,70 +6919,19 @@ class StringBuilder {
   }
 }
 
-// Использование
-const text = new StringBuilder()
+// Строим HTML элемент цепочкой
+const html = new StringBuilder()
   .append('Hello')
   .append(' ')
   .append('World')
-  .prepend('Say: ')
-  .insert(2, 'Beautiful ')
+  .uppercase()                    // "HELLO WORLD"
+  .wrap('<h1>', '</h1>')          // "<h1>HELLO WORLD</h1>"
   .toString();
 
-console.log(text); // "Say: Hello Beautiful World"
+console.log(html); // "<h1>HELLO WORLD</h1>"
 
-// Функциональный подход к чейнингу
-class FunctionalChain {
-  constructor(value) {
-    this.value = value;
-  }
-  
-  map(fn) {
-    this.value = fn(this.value);
-    return this;
-  }
-  
-  filter(predicate) {
-    if (Array.isArray(this.value)) {
-      this.value = this.value.filter(predicate);
-    }
-    return this;
-  }
-  
-  sort(compareFn) {
-    if (Array.isArray(this.value)) {
-      this.value = this.value.sort(compareFn);
-    }
-    return this;
-  }
-  
-  tap(fn) {
-    fn(this.value); // Выполняем функцию, но не изменяем значение
-    return this;
-  }
-  
-  get() {
-    return this.value;
-  }
-}
-
-// Создание удобной функции для начала цепочки
-function chain(value) {
-  return new FunctionalChain(value);
-}
-
-// Использование
-const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-
-const result2 = chain(numbers)
-  .filter(x => x % 2 === 0)     // [2, 4, 6, 8, 10]
-  .map(x => x * x)              // [4, 16, 36, 64, 100]
-  .filter(x => x > 20)          // [36, 64, 100]
-  .tap(console.log)             // Логируем промежуточный результат
-  .sort((a, b) => b - a)        // [100, 64, 36]
-  .get();
-
-// Пример с HTTP запросами
-class HttpClient {
+// 🔍 2. HTTP клиент с настройками
+class ApiClient {
   constructor() {
     this.config = {
       headers: {},
@@ -6920,11 +6950,6 @@ class HttpClient {
     return this;
   }
   
-  setTimeout(ms) {
-    this.config.timeout = ms;
-    return this;
-  }
-  
   auth(token) {
     return this.setHeader('Authorization', `Bearer ${token}`);
   }
@@ -6933,95 +6958,145 @@ class HttpClient {
     return this.setHeader('Content-Type', type);
   }
   
+  timeout(ms) {
+    this.config.timeout = ms;
+    return this;
+  }
+  
   async get(url) {
-    const queryString = new URLSearchParams(this.config.params);
-    const fullUrl = `${url}?${queryString}`;
+    const params = new URLSearchParams(this.config.params);
+    const fullUrl = `${url}?${params}`;
     
     return fetch(fullUrl, {
       method: 'GET',
-      headers: this.config.headers,
-      signal: AbortSignal.timeout(this.config.timeout)
-    });
-  }
-  
-  async post(url, data) {
-    return fetch(url, {
-      method: 'POST',
-      headers: this.config.headers,
-      body: JSON.stringify(data),
-      signal: AbortSignal.timeout(this.config.timeout)
+      headers: this.config.headers
     });
   }
 }
 
-// Использование
-const client = new HttpClient()
-  .auth('your-token-here')
+// Настраиваем и отправляем запрос одной цепочкой
+const response = await new ApiClient()
+  .auth('your-token-123')
   .contentType('application/json')
-  .setTimeout(10000)
+  .timeout(10000)
   .setParam('page', 1)
-  .setParam('limit', 10);
+  .setParam('limit', 10)
+  .get('/api/users');
 
-// client.get('/api/users').then(response => response.json());
-
-// Async чейнинг
-class AsyncChain {
-  constructor(promise) {
-    this.promise = promise || Promise.resolve();
+// 🔍 3. Обработка массивов (функциональный стиль)
+class ArrayProcessor {
+  constructor(array) {
+    this.data = [...array]; // Копируем массив
   }
   
-  then(onFulfilled, onRejected) {
-    this.promise = this.promise.then(onFulfilled, onRejected);
+  filter(predicate) {
+    this.data = this.data.filter(predicate);
     return this;
   }
   
-  catch(onRejected) {
-    this.promise = this.promise.catch(onRejected);
+  map(transform) {
+    this.data = this.data.map(transform);
     return this;
   }
   
-  delay(ms) {
-    this.promise = this.promise.then(value => 
-      new Promise(resolve => setTimeout(() => resolve(value), ms))
-    );
+  sort(compareFn) {
+    this.data = this.data.sort(compareFn);
     return this;
   }
   
-  log(message) {
-    this.promise = this.promise.then(value => {
-      console.log(message, value);
-      return value;
-    });
+  unique() {
+    this.data = [...new Set(this.data)];
     return this;
   }
   
-  async execute() {
-    return this.promise;
+  take(count) {
+    this.data = this.data.slice(0, count);
+    return this;
+  }
+  
+  debug(label) {
+    console.log(`${label}:`, this.data);
+    return this; // Не изменяем данные, только логируем
+  }
+  
+  get() {
+    return this.data; // Получаем результат
   }
 }
 
-// Использование
-async function example() {
-  const result = await new AsyncChain(Promise.resolve(1))
-    .then(x => x + 1)
-    .log('After increment:')
-    .delay(1000)
-    .then(x => x * 2)
-    .log('After multiply:')
-    .catch(err => console.error('Error:', err))
-    .execute();
+// Обрабатываем данные цепочкой
+const numbers = [5, 2, 8, 1, 9, 2, 7, 3, 8, 4];
+
+const processed = new ArrayProcessor(numbers)
+  .filter(x => x > 3)           // [5, 8, 9, 7, 8, 4]
+  .debug('После фильтра')       // Логируем промежуточный результат
+  .map(x => x * 2)              // [10, 16, 18, 14, 16, 8]
+  .unique()                     // [10, 16, 18, 14, 8]
+  .sort((a, b) => b - a)        // [18, 16, 14, 10, 8]
+  .take(3)                      // [18, 16, 14]
+  .debug('Финальный результат') // Логируем финал
+  .get();
+
+console.log(processed); // [18, 16, 14]
+```
+
+**🔍 Чейнинг с условиями:**
+
+```javascript
+// 🔍 Условный чейнинг
+class ConditionalChain {
+  constructor(value) {
+    this.value = value;
+  }
   
-  console.log('Final result:', result);
+  if(condition, fn) {
+    if (condition) {
+      this.value = fn(this.value);
+    }
+    return this;
+  }
+  
+  unless(condition, fn) {
+    if (!condition) {
+      this.value = fn(this.value);
+    }
+    return this;
+  }
+  
+  when(condition, fn) {
+    return this.if(condition, fn);
+  }
+  
+  get() {
+    return this.value;
+  }
 }
 
-// Чейнинг в стиле jQuery
-function $(selector) {
-  return new DOMChain(document.querySelectorAll(selector));
-}
+// Условная обработка
+const userInput = "  HELLO world  ";
 
-class DOMChain {
-  constructor(elements) {
-    this.elements = Array.from(elements);
+const cleaned = new ConditionalChain(userInput)
+  .if(typeof userInput === 'string', str => str.trim())
+  .unless(userInput.length === 0, str => str.toLowerCase())
+  .when(userInput.includes('hello'), str => str.replace('hello', '👋'))
+  .get();
+
+console.log(cleaned); // "👋 world"
+```
+
+**🧠 Мнемоника для запоминания:**
+
+- **Chaining** = "**Цепь**" (связываем методы как звенья)
+- **return this** = "**Верни себя**" (метод возвращает объект для продолжения)
+- **Fluent Interface** = "**Текучий интерфейс**" (код течет как вода)
+
+**⚡ Популярные примеры чейнинга:**
+
+```javascript
+// 🔍 1. jQuery стиль (DOM манипуляции)
+class SimpleDOM {
+  constructor(selector) {
+    this.elements = document.querySelectorAll(selector);
   }
   
   addClass(className) {
@@ -7029,26 +7104,13 @@ class DOMChain {
     return this;
   }
   
-  removeClass(className) {
-    this.elements.forEach(el => el.classList.remove(className));
+  css(property, value) {
+    this.elements.forEach(el => el.style[property] = value);
     return this;
   }
   
   text(content) {
-    if (content === undefined) {
-      return this.elements.map(el => el.textContent);
-    }
     this.elements.forEach(el => el.textContent = content);
-    return this;
-  }
-  
-  hide() {
-    this.elements.forEach(el => el.style.display = 'none');
-    return this;
-  }
-  
-  show() {
-    this.elements.forEach(el => el.style.display = '');
     return this;
   }
   
@@ -7058,137 +7120,390 @@ class DOMChain {
   }
 }
 
-// Использование (если бы были DOM элементы)
-// $('.my-elements')
-//   .addClass('active')
-//   .text('Updated text')
-//   .on('click', () => console.log('Clicked!'))
-//   .show();
+// Использование как jQuery
+// new SimpleDOM('.buttons')
+//   .addClass('btn-primary')
+//   .css('padding', '10px')
+//   .text('Click me!')
+//   .on('click', () => alert('Clicked!'));
+
+// 🔍 2. Promise чейнинг (встроенный в JS)
+fetch('/api/users')
+  .then(response => response.json())
+  .then(users => users.filter(u => u.active))
+  .then(activeUsers => console.log(activeUsers))
+  .catch(error => console.error(error));
+
+// 🔍 3. Lodash-style чейнинг
+class LodashStyle {
+  constructor(value) {
+    this.value = value;
+  }
+  
+  map(fn) {
+    this.value = this.value.map(fn);
+    return this;
+  }
+  
+  filter(predicate) {
+    this.value = this.value.filter(predicate);
+    return this;
+  }
+  
+  sortBy(key) {
+    this.value = this.value.sort((a, b) => a[key] - b[key]);
+    return this;
+  }
+  
+  value() {
+    return this.value; // Завершающий метод
+  }
+}
+
+const users = [
+  { name: 'Иван', age: 25 },
+  { name: 'Мария', age: 30 },
+  { name: 'Петр', age: 20 }
+];
+
+const result = new LodashStyle(users)
+  .filter(user => user.age > 21)
+  .sortBy('age')
+  .map(user => user.name)
+  .value();
+
+console.log(result); // ['Иван', 'Мария']
 ```
 
-41. В чем разница между function и arrow function? Каким будет результат выполнения кода?
+**⚡ Преимущества и недостатки:**
 
 ```javascript
-const pluckDeep = key => obj => key.split('.').reduce((accum, key) => accum[key], obj)
-const compose = (...fns) => res => fns.reduce((accum, next) => next(accum), res)
-const unfold = (f, seed) => {
-  const go = (f, seed, acc) => {
-    const res = f(seed)
-    return res ? go(f, res[1], acc.concat([res[0]])) : acc
+// ✅ Преимущества чейнинга:
+
+// 1. Читаемость - код читается как история
+const story = new StringBuilder()
+  .append('Жил-был')
+  .append(' ')
+  .append('программист')
+  .wrap('«', '»')
+  .toString(); // "«Жил-был программист»"
+
+// 2. Компактность - меньше переменных
+const result = new Calculator(100)
+  .subtract(20)   // 80
+  .divide(4)      // 20
+  .add(5)         // 25
+  .result();
+
+// 3. Неизменяемость (если копировать данные)
+const original = [1, 2, 3];
+const processed = new ArrayProcessor(original)
+  .map(x => x * 2)
+  .filter(x => x > 4)
+  .get(); // [6] (original не изменился)
+
+// ❌ Недостатки чейнинга:
+
+// 1. Сложность отладки
+const debugResult = new Calculator(10)
+  .add(5)       // Где ошибка?
+  .multiply(0)  // Здесь?
+  .divide(2)    // Или здесь?
+  .result();    // NaN - но где проблема?
+
+// 2. Принуждение к возврату this
+class BadExample {
+  process() {
+    // Хотим вернуть результат, но нужно this для чейнинга
+    const result = this.heavyCalculation();
+    return this; // Теряем результат!
   }
-  return go(f, seed, [])
+}
+
+// 3. Все методы должны быть chainable
+class Mixed {
+  chainableMethod() {
+    return this; // Для чейнинга
+  }
+  
+  getValue() {
+    return this.value; // Прерывает цепочку
+  }
 }
 ```
 
-**Ответ:**
-Основные различия между обычными функциями и стрелочными функциями:
+**Заключение:** Чейнинг делает код элегантным и читаемым, позволяя выстраивать операции в логическую последовательность. Ключ — каждый метод возвращает `this`. Популярен в библиотеках (jQuery, Lodash) и современном JavaScript (Promise, Array methods).
+
+43. **Function vs Arrow Function - в чем ключевые отличия?**
+
+🎯 **Простое объяснение:** Обычные функции и стрелочные — это два разных способа создания функций в JavaScript. Главное отличие — как они работают с `this` и что у них есть/нет "из коробки".
+
+**🔍 Основные различия:**
 
 ```javascript
-// 1. СИНТАКСИС
-// Обычная функция
-function regularFunction(a, b) {
+// 🔍 1. СИНТАКСИС - короче записать
+// Обычная функция - больше букв
+function normalAdd(a, b) {
   return a + b;
 }
 
-// Стрелочная функция
-const arrowFunction = (a, b) => a + b;
+// Стрелочная функция - короче
+const arrowAdd = (a, b) => a + b;
 
-// 2. THIS CONTEXT
-const obj = {
-  name: 'Test',
+// Ещё короче для одного параметра
+const double = x => x * 2;
+const sayHello = () => 'Hello!';
+
+// 🔍 2. THIS CONTEXT - главное отличие!
+const person = {
+  name: 'Иван',
   
-  // Обычная функция - this зависит от контекста вызова
-  regularMethod: function() {
-    console.log(this.name); // 'Test'
+  // Обычная функция - this меняется в зависимости от вызова
+  sayNameNormal: function() {
+    console.log(`Меня зовут ${this.name}`); // 'Иван'
     
+    // Проблема: this теряется в колбэке
     setTimeout(function() {
-      console.log(this.name); // undefined (this = window/global)
-    }, 100);
+      console.log(`Привет от ${this.name}`); // undefined (this = window)
+    }, 1000);
   },
   
-  // Стрелочная функция - this берётся из лексического окружения
-  arrowMethod: () => {
-    console.log(this.name); // undefined (this = window/global)
-  },
-  
-  mixedMethod: function() {
-    console.log(this.name); // 'Test'
+  // Стрелочная функция - this НЕ меняется
+  sayNameArrow: function() {
+    console.log(`Меня зовут ${this.name}`); // 'Иван'
     
+    // Решение: this сохраняется в стрелочной функции
     setTimeout(() => {
-      console.log(this.name); // 'Test' (this сохраняется)
-    }, 100);
+      console.log(`Привет от ${this.name}`); // 'Иван' (this сохранился!)
+    }, 1000);
+  },
+  
+  // ❌ Плохо: стрелочная функция как метод
+  wrongMethod: () => {
+    console.log(this.name); // undefined (this = window, а не person)
   }
 };
 
-// 3. ARGUMENTS
-function regularWithArgs() {
-  console.log(arguments); // Псевдомассив аргументов
+// 🔍 3. ARGUMENTS - есть/нет
+function withArguments() {
+  console.log(arguments); // [1, 2, 3] - псевдомассив
+  console.log(arguments.length); // 3
 }
 
-const arrowWithArgs = () => {
-  // console.log(arguments); // ReferenceError!
+const withoutArguments = () => {
+  // console.log(arguments); // ❌ ReferenceError!
 };
 
 // Для стрелочных функций используйте rest parameters
-const arrowWithRest = (...args) => {
-  console.log(args); // Настоящий массив
+const withRest = (...args) => {
+  console.log(args); // [1, 2, 3] - настоящий массив
+  console.log(args.length); // 3
 };
 
-// 4. КОНСТРУКТОРЫ
-function RegularConstructor(name) {
+withArguments(1, 2, 3);
+withRest(1, 2, 3);
+
+// 🔍 4. КОНСТРУКТОРЫ - можно/нельзя
+function NormalConstructor(name) {
   this.name = name;
 }
 
-const instance1 = new RegularConstructor('Test'); // OK
+const user1 = new NormalConstructor('Петр'); // ✅ Работает
+console.log(user1.name); // 'Петр'
 
 const ArrowConstructor = (name) => {
   this.name = name;
 };
 
-// const instance2 = new ArrowConstructor('Test'); // TypeError!
+// const user2 = new ArrowConstructor('Мария'); // ❌ TypeError!
 
-// 5. HOISTING
-console.log(hoistedFunction); // [Function: hoistedFunction]
-// console.log(arrowVar); // ReferenceError!
+// 🔍 5. HOISTING - поднимается/не поднимается
+console.log(hoistedFunc()); // ✅ 'Я поднялся!' (работает до объявления)
 
-function hoistedFunction() {
-  return 'I am hoisted';
+function hoistedFunc() {
+  return 'Я поднялся!';
 }
 
-const arrowVar = () => 'I am not hoisted';
+// console.log(notHoisted()); // ❌ ReferenceError!
 
-// 6. ПРОТОТИП
-console.log(RegularConstructor.prototype); // {}
-console.log(ArrowConstructor.prototype); // undefined
+const notHoisted = () => 'Я не поднялся!';
+```
 
-// АНАЛИЗ КОДА:
+**🔍 Практические применения:**
 
-// pluckDeep - извлекает вложенные свойства объекта
-const pluckDeep = key => obj => key.split('.').reduce((accum, key) => accum[key], obj);
-
-const user = {
-  profile: {
-    personal: {
-      name: 'John',
-      age: 30
-    }
+```javascript
+// 🔍 1. Event handlers - where this matters
+class Counter {
+  constructor() {
+    this.count = 0;
+    this.button = document.querySelector('#myButton');
   }
+  
+  // ❌ Проблема с обычной функцией
+  bindWrong() {
+    this.button.addEventListener('click', function() {
+      this.count++; // ❌ this = button element, а не Counter!
+      console.log(this.count); // undefined
+    });
+  }
+  
+  // ✅ Решение со стрелочной функцией
+  bindCorrect() {
+    this.button.addEventListener('click', () => {
+      this.count++; // ✅ this = Counter instance
+      console.log(this.count); // 1, 2, 3...
+    });
+  }
+  
+  // ✅ Альтернатива с bind
+  bindAlternative() {
+    this.button.addEventListener('click', function() {
+      this.count++;
+      console.log(this.count);
+    }.bind(this)); // Привязываем this принудительно
+  }
+}
+
+// 🔍 2. Array methods - стрелочные функции везде!
+const numbers = [1, 2, 3, 4, 5];
+
+// Коротко и красиво
+const doubled = numbers.map(x => x * 2);        // [2, 4, 6, 8, 10]
+const evens = numbers.filter(x => x % 2 === 0); // [2, 4]
+const sum = numbers.reduce((acc, x) => acc + x, 0); // 15
+
+// Vs обычные функции - громоздко
+const doubledOld = numbers.map(function(x) { return x * 2; });
+
+// 🔍 3. Async/await - стрелочные функции удобнее
+const users = ['user1', 'user2', 'user3'];
+
+// Получаем данные пользователей
+const fetchUserData = async () => {
+  const results = await Promise.all(
+    users.map(async user => {
+      const response = await fetch(`/api/users/${user}`);
+      return response.json();
+    })
+  );
+  return results;
 };
 
-const getName = pluckDeep('profile.personal.name');
-console.log(getName(user)); // 'John'
+// 🔍 4. React/Vue компоненты - часто используют стрелочные
+class ReactComponent {
+  constructor() {
+    this.state = { clicked: false };
+  }
+  
+  // ✅ Стрелочная функция - this всегда правильный
+  handleClick = () => {
+    this.setState({ clicked: true });
+  }
+  
+  // ❌ Обычная функция - нужен bind в render
+  handleClickWrong() {
+    this.setState({ clicked: true });
+  }
+  
+  render() {
+    return `<button onclick="${this.handleClick}">Click me</button>`;
+    // При обычной функции: onclick="${this.handleClickWrong.bind(this)}"
+  }
+}
+```
 
-// compose - композиция функций (справа налево)
+**🧠 Мнемоника для запоминания:**
+
+- **Arrow function** = "**Стрелка**" (точно в цель - сохраняет this)
+- **Regular function** = "**Хамелеон**" (this меняется в зависимости от контекста)
+- **this в стрелочной** = "**Наследует от родителя**"
+- **this в обычной** = "**Смотрит кто вызвал**"
+
+**⚡ Когда что использовать:**
+
+```javascript
+// ✅ СТРЕЛОЧНЫЕ ФУНКЦИИ используйте для:
+
+// 1. Коллбэков в массивах
+[1, 2, 3].map(x => x * 2)
+[1, 2, 3].filter(x => x > 1)
+[1, 2, 3].reduce((acc, x) => acc + x)
+
+// 2. Event handlers в классах
+button.addEventListener('click', () => this.handleClick())
+
+// 3. Коротких функций
+const add = (a, b) => a + b
+const isEven = n => n % 2 === 0
+
+// 4. Асинхронных коллбэков
+setTimeout(() => console.log('Hello'), 1000)
+fetch('/api').then(res => res.json())
+
+// ✅ ОБЫЧНЫЕ ФУНКЦИИ используйте для:
+
+// 1. Методов объектов
+const obj = {
+  name: 'Test',
+  getName: function() { return this.name; } // ✅ this = obj
+}
+
+// 2. Конструкторов
+function User(name) {
+  this.name = name; // ✅ this = новый объект
+}
+
+// 3. Когда нужен arguments
+function sum() {
+  return Array.from(arguments).reduce((a, b) => a + b);
+}
+
+// 4. Event handlers где this = element
+button.addEventListener('click', function() {
+  this.style.color = 'red'; // this = button
+});
+
+// ❌ ИЗБЕГАЙТЕ:
+
+// Стрелочные функции как методы объектов
+const badObj = {
+  name: 'Test',
+  getName: () => this.name // ❌ this = window, а не badObj
+};
+
+// Обычные функции в коллбэках классов
+class BadClass {
+  method() {
+    setTimeout(function() {
+      this.doSomething(); // ❌ this = window, а не BadClass
+    }, 1000);
+  }
+}
+```
+
+**⚡ Разбор кода из вопроса:**
+
+```javascript
+// pluckDeep - извлекает вложенные свойства
+const pluckDeep = key => obj => key.split('.').reduce((accum, key) => accum[key], obj);
+
+// Использование каррирования со стрелочными функциями
+const user = { profile: { personal: { name: 'Иван' } } };
+const getName = pluckDeep('profile.personal.name');
+console.log(getName(user)); // 'Иван'
+
+// compose - композиция функций
 const compose = (...fns) => res => fns.reduce((accum, next) => next(accum), res);
 
 const add1 = x => x + 1;
-const multiply2 = x => x * 2;
+const multiply2 = x => x * 2;  
 const subtract3 = x => x - 3;
 
+// Функции выполняются справа налево
 const composed = compose(subtract3, multiply2, add1);
 console.log(composed(5)); // (5 + 1) * 2 - 3 = 9
 
-// unfold - разворачивает значение в массив
+// unfold - генератор последовательностей
 const unfold = (f, seed) => {
   const go = (f, seed, acc) => {
     const res = f(seed);
@@ -7197,71 +7512,12 @@ const unfold = (f, seed) => {
   return go(f, seed, []);
 };
 
-// Пример: генерация чисел от 1 до 5
+// Генерируем числа от 1 до 5
 const range = unfold(n => n <= 5 ? [n, n + 1] : null, 1);
 console.log(range); // [1, 2, 3, 4, 5]
+```
 
-// ПРАКТИЧЕСКИЕ ПРИМЕРЫ РАЗЛИЧИЙ:
-
-// Event handlers - this context
-class Button {
-  constructor(element) {
-    this.element = element;
-    this.clickCount = 0;
-  }
-  
-  // Проблема с обычной функцией
-  bindRegular() {
-    this.element.addEventListener('click', function() {
-      this.clickCount++; // Error: this не указывает на Button
-    });
-  }
-  
-  // Решение со стрелочной функцией
-  bindArrow() {
-    this.element.addEventListener('click', () => {
-      this.clickCount++; // OK: this указывает на Button
-    });
-  }
-  
-  // Альтернативное решение с bind
-  bindWithBind() {
-    this.element.addEventListener('click', function() {
-      this.clickCount++;
-    }.bind(this));
-  }
-}
-
-// Методы массивов
-const numbers = [1, 2, 3, 4, 5];
-
-// Стрелочные функции отлично подходят для коллбэков
-const doubled = numbers.map(n => n * 2);
-const evens = numbers.filter(n => n % 2 === 0);
-const sum = numbers.reduce((acc, n) => acc + n, 0);
-
-// Curry и partial application
-const multiply = (a, b) => a * b;
-const multiplyBy2 = multiply.bind(null, 2);
-
-// Или со стрелочными функциями
-const curriedMultiply = a => b => a * b;
-const multiplyBy3 = curriedMultiply(3);
-
-// Когда использовать что:
-
-// ✅ СТРЕЛОЧНЫЕ ФУНКЦИИ:
-// - Коллбэки в map, filter, reduce
-// - Event handlers в классах
-// - Короткие функции
-// - Когда нужно сохранить this
-
-// ✅ ОБЫЧНЫЕ ФУНКЦИИ:
-// - Методы объектов
-// - Конструкторы
-// - Когда нужен dynamic this
-// - Когда нужны arguments
-// - Функции-генераторы
+**Заключение:** Стрелочные функции проще синтаксически и сохраняют `this` из внешнего контекста. Обычные функции более гибкие и имеют собственный `this`. Выбор зависит от задачи: стрелочные для коллбэков и коротких функций, обычные для методов и конструкторов.
 ```
 
 // ... existing code ...
